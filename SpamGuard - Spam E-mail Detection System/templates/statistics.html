@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Dataset Statistics - Email Spam Detection System{% endblock %}
+
+{% block content %}
+<section class="hero-panel reveal mb-4">
+    <div>
+        <p class="eyebrow">Data Health</p>
+        <h2 class="page-title">Dataset Distribution Overview</h2>
+        <p class="page-subtitle">Understand class balance and composition of the training dataset powering your spam detection models.</p>
+    </div>
+    <div class="hero-chip">
+        <span>Total Emails</span>
+        <strong>{{ stats.total_emails if stats else 0 }}</strong>
+    </div>
+</section>
+
+{% if error %}
+<article class="soft-card reveal">
+    <div class="result-block result-spam">
+        <h5 class="mb-2"><i class="fas fa-circle-exclamation me-2"></i>Dataset Issue</h5>
+        <p class="mb-0">{{ error }}</p>
+    </div>
+</article>
+{% else %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <article class="metric-card reveal h-100">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Total Emails</p>
+                    <p class="metric-value">{{ stats.total_emails }}</p>
+                </div>
+                <span class="metric-icon metric-total"><i class="fas fa-database"></i></span>
+            </div>
+        </article>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <article class="metric-card reveal h-100">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Spam Emails</p>
+                    <p class="metric-value">{{ stats.spam_count }}</p>
+                </div>
+                <span class="metric-icon metric-spam"><i class="fas fa-triangle-exclamation"></i></span>
+            </div>
+            <small class="text-muted">{{ stats.spam_percentage }}% of dataset</small>
+        </article>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <article class="metric-card reveal h-100">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Ham Emails</p>
+                    <p class="metric-value">{{ stats.ham_count }}</p>
+                </div>
+                <span class="metric-icon metric-ham"><i class="fas fa-circle-check"></i></span>
+            </div>
+            <small class="text-muted">{{ stats.ham_percentage }}% of dataset</small>
+        </article>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <article class="metric-card reveal h-100">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Balance Ratio</p>
+                    <p class="metric-value">{{ stats.spam_percentage }}:{{ stats.ham_percentage }}</p>
+                </div>
+                <span class="metric-icon metric-accuracy"><i class="fas fa-scale-balanced"></i></span>
+            </div>
+            <small class="text-muted">Spam to Ham</small>
+        </article>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <article class="soft-card chart-card reveal h-100">
+            <div class="card-title-row">
+                <h3>Spam vs Ham</h3>
+            </div>
+            <canvas id="distributionChart"></canvas>
+        </article>
+    </div>
+
+    <div class="col-lg-6">
+        <article class="soft-card chart-card reveal h-100">
+            <div class="card-title-row">
+                <h3>Dataset Volume</h3>
+            </div>
+            <canvas id="overviewChart"></canvas>
+        </article>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12">
+        <article class="soft-card reveal">
+            <div class="card-title-row">
+                <h3>Sample Records</h3>
+                <span class="inline-badge badge-info">Preview</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Email Snippet</th>
+                            <th>Label</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Congratulations! You have won a free iPhone. Click here to claim now.</td>
+                            <td><span class="pill pill-danger">Spam</span></td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Hello team, your weekly stand-up is scheduled for tomorrow at 9 AM.</td>
+                            <td><span class="pill pill-success">Ham</span></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>URGENT: Your account will be suspended. Verify credentials immediately.</td>
+                            <td><span class="pill pill-danger">Spam</span></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>Reminder: doctor appointment confirmed for next Monday.</td>
+                            <td><span class="pill pill-success">Ham</span></td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>Exclusive investment opportunity. Double your money with zero risk.</td>
+                            <td><span class="pill pill-danger">Spam</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted mt-3 mb-0">Showing sample of {{ stats.total_emails }} total records.</p>
+        </article>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+{% if not error|default(false) %}
+const statsData = {{ stats|tojson|safe }};
+
+new Chart(document.getElementById('distributionChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Spam', 'Ham'],
+        datasets: [{
+            data: [Number(statsData.spam_count), Number(statsData.ham_count)],
+            backgroundColor: ['#dc2626', '#16a34a'],
+            borderColor: ['#b91c1c', '#15803d'],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+new Chart(document.getElementById('overviewChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+        labels: ['Total', 'Spam', 'Ham'],
+        datasets: [{
+            data: [Number(statsData.total_emails), Number(statsData.spam_count), Number(statsData.ham_count)],
+            backgroundColor: ['#0f766e', '#dc2626', '#16a34a'],
+            borderRadius: 10,
+            maxBarThickness: 52
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(15, 23, 42, 0.08)' }
+            },
+            x: {
+                grid: { display: false }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

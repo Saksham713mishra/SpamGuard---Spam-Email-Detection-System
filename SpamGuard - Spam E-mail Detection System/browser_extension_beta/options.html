@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpamGuard Beta Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="popup-shell" style="max-width: 720px; margin: 16px auto;">
+    <header class="header">
+      <h1>SpamGuard Beta Settings</h1>
+    </header>
+
+    <label class="field-label" for="apiBaseUrl">API Base URL</label>
+    <input id="apiBaseUrl" type="text" placeholder="http://127.0.0.1:5000">
+
+    <label class="field-label" for="apiKey">API Key (optional)</label>
+    <input id="apiKey" type="text" placeholder="sg_xxx">
+
+    <label class="check-row">
+      <input id="superScanDefault" type="checkbox">
+      <span>Enable SuperScan by default</span>
+    </label>
+
+    <div class="btn-row">
+      <button id="saveBtn" type="button" class="brand-btn">Save Settings</button>
+      <button id="resetBtn" type="button" class="ghost-btn">Reset</button>
+    </div>
+
+    <p id="statusText" class="status-text"></p>
+  </main>
+
+  <script src="options.js"></script>
+</body>
+</html>

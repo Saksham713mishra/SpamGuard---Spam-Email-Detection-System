@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpamGuard Beta</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="popup-shell">
+    <header class="header">
+      <h1>SpamGuard Beta</h1>
+      <button id="openOptionsBtn" class="ghost-btn" type="button">Settings</button>
+    </header>
+
+    <label class="field-label" for="messageInput">Selected Text / Message</label>
+    <textarea id="messageInput" rows="6" placeholder="Select text from webpage or paste suspicious message here..."></textarea>
+
+    <label class="field-label" for="urlInput">Page URL</label>
+    <input id="urlInput" type="text" placeholder="https://example.com">
+
+    <label class="check-row">
+      <input id="superScanToggle" type="checkbox">
+      <span>Enable SuperScan</span>
+    </label>
+
+    <div class="btn-row">
+      <button id="scanBtn" class="brand-btn" type="button">Run Scan</button>
+      <button id="clearBtn" class="ghost-btn" type="button">Clear</button>
+    </div>
+
+    <section id="resultPanel" class="result-card hidden">
+      <h2>Result</h2>
+      <p id="verdictText" class="verdict"></p>
+      <p id="riskText" class="risk"></p>
+      <ul id="reasonList" class="reason-list"></ul>
+
+      <div class="btn-row feedback-row">
+        <button id="markSafeBtn" class="ghost-btn" type="button">Mark Safe</button>
+        <button id="markScamBtn" class="danger-btn" type="button">Mark Scam</button>
+      </div>
+      <p id="feedbackStatus" class="status-text"></p>
+    </section>
+
+    <p id="statusText" class="status-text"></p>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

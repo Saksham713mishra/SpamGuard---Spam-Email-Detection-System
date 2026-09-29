@@ -1,0 +1,35 @@
+MACHINE LEARNING EMAIL SPAM DETECTION - PERFORMANCE REPORT
+======================================================================
+
+MODEL COMPARISON TABLE:
+----------------------------------------------------------------------
+Model Accuracy Precision Recall F1 Score
+   LR   0.9523    0.9775 0.9255   0.9508
+
+DETAILED METRICS FOR LR:
+--------------------------------------------------
+Accuracy:  0.9523
+Precision: 0.9775
+Recall:    0.9255
+F1-Score:  0.9508
+
+CONFUSION MATRIX:
+[[185   4]
+ [ 14 174]]
+
+CLASSIFICATION REPORT:
+              precision    recall  f1-score   support
+
+         Ham       0.93      0.98      0.95       189
+        Spam       0.98      0.93      0.95       188
+
+    accuracy                           0.95       377
+   macro avg       0.95      0.95      0.95       377
+weighted avg       0.95      0.95      0.95       377
+
+
+MODEL CHARACTERISTICS:
+----------------------------------------------------------------------
+lr:
+  speed: Balanced
+  description: Logistic Regression offers stable, interpretable decision boundaries.

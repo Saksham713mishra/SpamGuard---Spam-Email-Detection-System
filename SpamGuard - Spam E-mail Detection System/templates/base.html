@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Email Spam Detection System{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="bg-orb orb-one" aria-hidden="true"></div>
+    <div class="bg-orb orb-two" aria-hidden="true"></div>
+
+    <div class="app-shell" id="wrapper">
+        <aside id="sidebar-wrapper" class="sidebar-panel">
+            <a href="{{ url_for('dashboard') }}" class="brand-block text-decoration-none">
+                <span class="brand-icon"><i class="fas fa-shield-virus"></i></span>
+                <div>
+                    <h1>SpamGuard</h1>
+                    <p>Email Threat Monitor</p>
+                </div>
+            </a>
+
+            <nav class="nav-list">
+                <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-gauge-high"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('detection') }}" class="nav-item {% if request.endpoint == 'detection' %}active{% endif %}">
+                    <i class="fas fa-envelope-open-text"></i>
+                    <span>Spam Detection</span>
+                </a>
+                <a href="{{ url_for('performance') }}" class="nav-item {% if request.endpoint == 'performance' %}active{% endif %}">
+                    <i class="fas fa-chart-column"></i>
+                    <span>Model Performance</span>
+                </a>
+                {% if g.current_user %}
+                <a href="{{ url_for('history') }}" class="nav-item {% if request.endpoint == 'history' %}active{% endif %}">
+                    <i class="fas fa-clock-rotate-left"></i>
+                    <span>Scan History</span>
+                </a>
+                <a href="{{ url_for('developer_dashboard') }}" class="nav-item {% if request.endpoint == 'developer_dashboard' %}active{% endif %}">
+                    <i class="fas fa-key"></i>
+                    <span>Developer API</span>
+                </a>
+                {% endif %}
+                <a href="{{ url_for('about') }}" class="nav-item {% if request.endpoint == 'about' %}active{% endif %}">
+                    <i class="fas fa-circle-info"></i>
+                    <span>About</span>
+                </a>
+            </nav>
+        </aside>
+
+        <div id="page-content-wrapper" class="content-panel">
+            <header class="topbar">
+                <button class="icon-btn" id="sidebarToggle" aria-label="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <div class="topbar-meta">
+                    <span class="status-dot"></span>
+                    <span>Live Detection Engine</span>
+                </div>
+
+                <div class="topbar-actions">
+                    {% if g.current_user %}
+                    <span class="user-chip">
+                        <i class="fas fa-user-shield"></i>
+                        {{ g.current_user['username'] }}
+                    </span>
+                    <form action="{{ url_for('logout') }}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-brand btn-sm">Sign Out</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-brand btn-sm">Sign In</a>
+                    <a href="{{ url_for('register') }}" class="btn btn-brand btn-sm">Create Account</a>
+                    {% endif %}
+                </div>
+            </header>
+
+            <main class="page-frame">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-3">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category if category in ['success', 'warning', 'danger', 'info'] else 'secondary' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

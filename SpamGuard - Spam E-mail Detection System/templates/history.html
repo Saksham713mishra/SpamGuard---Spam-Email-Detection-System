@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Scan History - Email Spam Detection System{% endblock %}
+
+{% block content %}
+<section class="hero-panel reveal mb-4">
+    <div>
+        <p class="eyebrow">User Activity</p>
+        <h2 class="page-title">Scan History</h2>
+        <p class="page-subtitle">Review recent scans, outcomes, and key signals captured from your threat investigations.</p>
+    </div>
+</section>
+
+<article class="soft-card reveal">
+    <div class="card-title-row">
+        <h3>Recent Scans</h3>
+        <span class="inline-badge badge-info">Last {{ history_rows|length }} entries</span>
+    </div>
+
+    {% if history_rows %}
+    <div class="table-responsive bulk-scroll-table">
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Input Preview</th>
+                    <th>Verdict</th>
+                    <th>Risk</th>
+                    <th>Extra</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in history_rows %}
+                {% set level = row['risk_level']|lower %}
+                <tr>
+                    <td>
+                        <span class="text-muted">{{ row['created_at'] }}</span>
+                    </td>
+                    <td>
+                        {% if row['input_text'] %}
+                            {{ row['input_text'][:120] }}{% if row['input_text']|length > 120 %}...{% endif %}
+                        {% elif row['input_url'] %}
+                            <span class="break-all">{{ row['input_url'] }}</span>
+                        {% else %}
+                            <span class="text-muted">No input preview</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="pill {% if row['verdict'] == 'likely_scam' %}pill-danger{% elif row['verdict'] == 'suspicious' %}pill-warning{% else %}pill-success{% endif %}">
+                            {{ row['verdict']|replace('_', ' ')|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="pill {% if level == 'high' %}pill-danger{% elif level == 'medium' %}pill-warning{% else %}pill-success{% endif %}">
+                            {{ row['risk_score'] }} / 100
+                        </span>
+                    </td>
+                    <td>
+                        {% if row['prediction'] %}
+                        <div><strong>ML:</strong> {{ row['prediction']|upper }}</div>
+                        {% endif %}
+                        <div><strong>URLs:</strong> {{ row['checked_urls'] }}</div>
+                        {% if row['super_scan'] %}
+                        <div><span class="pill pill-warning">SUPERSCAN</span></div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if row['top_explanation'] %}
+                <tr>
+                    <td></td>
+                    <td colspan="4" class="text-muted">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        {{ row['top_explanation'] }}
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="result-block result-soft">
+        <h5 class="mb-2"><i class="fas fa-clock-rotate-left me-2"></i>No Scans Yet</h5>
+        <p class="mb-3">Run a threat scan while signed in to populate your personal history.</p>
+        <a href="{{ url_for('detection') }}" class="btn btn-brand btn-sm">Go to Threat Scanner</a>
+    </div>
+    {% endif %}
+</article>
+{% endblock %}

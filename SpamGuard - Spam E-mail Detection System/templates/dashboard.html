@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Email Spam Detection System{% endblock %}
+
+{% set total_for_ratio = stats.total_analyzed if stats.total_analyzed > 0 else 1 %}
+{% set spam_ratio = (stats.spam_detected / total_for_ratio * 100) if stats.total_analyzed > 0 else 0 %}
+{% set ham_ratio = (stats.ham_detected / total_for_ratio * 100) if stats.total_analyzed > 0 else 0 %}
+
+{% block content %}
+<section class="hero-panel reveal mb-4">
+    <div>
+        <p class="eyebrow">Operations Dashboard</p>
+        <h2 class="page-title">Spam Detection Control Center</h2>
+        <p class="page-subtitle">Track how your classifier behaves in real time, monitor spam pressure, and jump straight into live email analysis.</p>
+        <div class="cta-row">
+            <a href="{{ url_for('detection') }}" class="btn btn-brand">
+                <i class="fas fa-wand-magic-sparkles me-2"></i>
+                Analyze New Email
+            </a>
+            <a href="{{ url_for('performance') }}" class="btn btn-outline-brand">
+                <i class="fas fa-chart-line me-2"></i>
+                Model Insights
+            </a>
+        </div>
+    </div>
+    <div class="hero-chip">
+        <span>Average Accuracy</span>
+        <strong>{{ avg_accuracy }}</strong>
+    </div>
+</section>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6">
+        <article class="metric-card reveal">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Total Analyzed</p>
+                    <p class="metric-value">{{ stats.total_analyzed }}</p>
+                </div>
+                <span class="metric-icon metric-total"><i class="fas fa-envelope"></i></span>
+            </div>
+        </article>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+        <article class="metric-card reveal">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Spam Detected</p>
+                    <p class="metric-value">{{ stats.spam_detected }}</p>
+                </div>
+                <span class="metric-icon metric-spam"><i class="fas fa-triangle-exclamation"></i></span>
+            </div>
+        </article>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+        <article class="metric-card reveal">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Safe Emails</p>
+                    <p class="metric-value">{{ stats.ham_detected }}</p>
+                </div>
+                <span class="metric-icon metric-ham"><i class="fas fa-circle-check"></i></span>
+            </div>
+        </article>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+        <article class="metric-card reveal">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Spam Share</p>
+                    <p class="metric-value">{{ '%.1f'|format(spam_ratio) }}%</p>
+                </div>
+                <span class="metric-icon metric-accuracy"><i class="fas fa-wave-square"></i></span>
+            </div>
+        </article>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row">
+                <h3>Latest Activity</h3>
+                {% if stats.last_prediction %}
+                <span class="inline-badge {% if stats.last_prediction.result == 'spam' %}badge-danger{% else %}badge-success{% endif %}">
+                    <i class="fas {% if stats.last_prediction.result == 'spam' %}fa-triangle-exclamation{% else %}fa-check{% endif %}"></i>
+                    {{ stats.last_prediction.result|upper }}
+                </span>
+                {% endif %}
+            </div>
+
+            {% if stats.last_prediction %}
+            <p class="muted-text mb-3">Most recent classification preview:</p>
+            <div class="result-block {% if stats.last_prediction.result == 'spam' %}result-spam{% else %}result-ham{% endif %}">
+                {{ stats.last_prediction.email_preview }}
+            </div>
+            <div class="mt-3">
+                <a href="{{ url_for('detection') }}" class="btn btn-outline-brand btn-sm">
+                    <i class="fas fa-repeat me-1"></i>
+                    Analyze Another Email
+                </a>
+            </div>
+            {% else %}
+            <p class="muted-text mb-3">No email has been analyzed yet. Start a quick test to populate this activity stream.</p>
+            <a href="{{ url_for('detection') }}" class="btn btn-brand btn-sm">
+                <i class="fas fa-play me-1"></i>
+                Start Detection
+            </a>
+            {% endif %}
+        </article>
+    </div>
+
+    <div class="col-lg-4">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row">
+                <h3>Threat Pulse</h3>
+                <span class="inline-badge badge-info">Live</span>
+            </div>
+
+            <p class="muted-text mb-2">Spam traffic level</p>
+            <div class="progress-soft mb-3">
+                <span style="width: {{ '%.1f'|format(spam_ratio) }}%;"></span>
+            </div>
+
+            {% if spam_ratio >= 60 %}
+            <p class="mb-3"><span class="pill pill-danger">High Risk</span></p>
+            {% elif spam_ratio >= 30 %}
+            <p class="mb-3"><span class="pill pill-danger" style="background: rgba(249, 115, 22, 0.18); color: #c2410c;">Medium Risk</span></p>
+            {% else %}
+            <p class="mb-3"><span class="pill pill-success">Low Risk</span></p>
+            {% endif %}
+
+            <div class="d-flex justify-content-between mb-2">
+                <span class="muted-text">Spam</span>
+                <strong>{{ '%.1f'|format(spam_ratio) }}%</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="muted-text">Ham</span>
+                <strong>{{ '%.1f'|format(ham_ratio) }}%</strong>
+            </div>
+        </article>
+    </div>
+</div>
+{% endblock %}

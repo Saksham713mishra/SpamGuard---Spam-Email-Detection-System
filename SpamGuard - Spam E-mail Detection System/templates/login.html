@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - Email Spam Detection System{% endblock %}
+
+{% block content %}
+<section class="hero-panel reveal mb-4">
+    <div>
+        <p class="eyebrow">Account Access</p>
+        <h2 class="page-title">Sign In</h2>
+        <p class="page-subtitle">Log in to save scans and review your previous threat analysis results.</p>
+    </div>
+</section>
+
+<div class="row justify-content-center">
+    <div class="col-xl-5 col-lg-6">
+        <article class="soft-card reveal auth-card">
+            <h3 class="mb-3">Welcome Back</h3>
+            <form method="post" novalidate>
+                <div class="mb-3">
+                    <label for="identity" class="form-label">Username or Email</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="identity"
+                        name="identity"
+                        placeholder="Enter username or email"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input
+                        type="password"
+                        class="form-control"
+                        id="password"
+                        name="password"
+                        placeholder="Enter password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-brand w-100">Sign In</button>
+            </form>
+
+            <p class="text-muted mt-3 mb-0">
+                New here?
+                <a href="{{ url_for('register') }}" class="auth-link">Create an account</a>
+            </p>
+        </article>
+    </div>
+</div>
+{% endblock %}

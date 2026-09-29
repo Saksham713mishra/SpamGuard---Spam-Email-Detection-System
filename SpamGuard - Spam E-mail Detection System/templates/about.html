@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}About - Email Spam Detection System{% endblock %}
+
+{% block content %}
+<section class="hero-panel reveal mb-4">
+    <div>
+        <p class="eyebrow">Project Overview</p>
+        <h2 class="page-title">Inside the SpamGuard Platform</h2>
+        <p class="page-subtitle">A machine learning based web application built to classify suspicious emails quickly and reliably using an ensemble workflow.</p>
+    </div>
+    <div class="hero-chip">
+        <span>Core Stack</span>
+        <strong>Flask + ML</strong>
+    </div>
+</section>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row">
+                <h3>What This App Solves</h3>
+            </div>
+            <p class="mb-3">SpamGuard helps identify whether incoming email content is likely spam or legitimate. It is designed for quick manual checks and lightweight dashboard monitoring in one place.</p>
+            <p class="muted-text mb-0">The system combines text preprocessing, TF-IDF vectorization, and multiple classifiers to produce robust predictions for real-world messaging scenarios.</p>
+        </article>
+    </div>
+
+    <div class="col-lg-4">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row">
+                <h3>Technology Stack</h3>
+            </div>
+            <ul class="info-list">
+                <li>Python and Flask backend service</li>
+                <li>Scikit-learn classification models</li>
+                <li>NLTK text preprocessing utilities</li>
+                <li>Bootstrap + custom responsive UI</li>
+            </ul>
+        </article>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <article class="metric-card reveal h-100">
+            <p class="metric-label">Step 1</p>
+            <p class="metric-value" style="font-size: 1.2rem;">Input</p>
+            <p class="text-muted mb-0">Raw email text enters the pipeline.</p>
+        </article>
+    </div>
+    <div class="col-md-3">
+        <article class="metric-card reveal h-100">
+            <p class="metric-label">Step 2</p>
+            <p class="metric-value" style="font-size: 1.2rem;">Preprocess</p>
+            <p class="text-muted mb-0">Cleaning, normalization, token handling.</p>
+        </article>
+    </div>
+    <div class="col-md-3">
+        <article class="metric-card reveal h-100">
+            <p class="metric-label">Step 3</p>
+            <p class="metric-value" style="font-size: 1.2rem;">Model Vote</p>
+            <p class="text-muted mb-0">NB, LR, SVM and ensemble evaluation.</p>
+        </article>
+    </div>
+    <div class="col-md-3">
+        <article class="metric-card reveal h-100">
+            <p class="metric-label">Step 4</p>
+            <p class="metric-value" style="font-size: 1.2rem;">Result</p>
+            <p class="text-muted mb-0">Spam or ham decision with vote details.</p>
+        </article>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6 col-xl-3">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row mb-2">
+                <h4>Real-Time Analysis</h4>
+            </div>
+            <p class="muted-text mb-0">Immediate prediction from pasted email content for quick moderation workflows.</p>
+        </article>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row mb-2">
+                <h4>Model Transparency</h4>
+            </div>
+            <p class="muted-text mb-0">Individual classifier votes are exposed to help validate each prediction.</p>
+        </article>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row mb-2">
+                <h4>Performance Tracking</h4>
+            </div>
+            <p class="muted-text mb-0">Dedicated pages for metric tables and chart-based comparison of model quality.</p>
+        </article>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row mb-2">
+                <h4>Dataset Insights</h4>
+            </div>
+            <p class="muted-text mb-0">Class balance and distribution visuals help keep data quality in check.</p>
+        </article>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Email Spam Detection System{% endblock %}
+
+{% block content %}
+<section class="hero-panel reveal mb-4">
+    <div>
+        <p class="eyebrow">Account Setup</p>
+        <h2 class="page-title">Create Account</h2>
+        <p class="page-subtitle">Create your account to unlock personal scan history and faster review workflow.</p>
+    </div>
+</section>
+
+<div class="row justify-content-center">
+    <div class="col-xl-6 col-lg-7">
+        <article class="soft-card reveal auth-card">
+            <h3 class="mb-3">Join SpamGuard</h3>
+            <form method="post" novalidate>
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="username"
+                        name="username"
+                        placeholder="Choose a username"
+                        minlength="3"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input
+                        type="email"
+                        class="form-control"
+                        id="email"
+                        name="email"
+                        placeholder="name@example.com"
+                        required
+                    >
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label for="password" class="form-label">Password</label>
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="password"
+                            name="password"
+                            placeholder="At least 6 characters"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+                    <div class="col-md-6">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="confirm_password"
+                            name="confirm_password"
+                            placeholder="Re-enter password"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-brand w-100 mt-3">Create Account</button>
+            </form>
+
+            <p class="text-muted mt-3 mb-0">
+                Already have an account?
+                <a href="{{ url_for('login') }}" class="auth-link">Sign in</a>
+            </p>
+        </article>
+    </div>
+</div>
+{% endblock %}

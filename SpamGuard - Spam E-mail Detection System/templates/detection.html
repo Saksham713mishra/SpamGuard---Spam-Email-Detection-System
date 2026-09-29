@@ -1,0 +1,721 @@
+{% extends "base.html" %}
+
+{% block title %}Spam Detection - Email Spam Detection System{% endblock %}
+
+{% block content %}
+<section class="hero-panel reveal mb-4">
+    <div>
+        <p class="eyebrow">Unified Threat Scan</p>
+        <h2 class="page-title">Email + URL Risk Analyzer</h2>
+        <p class="page-subtitle">Scan suspicious message text and links together to get a combined risk score with actionable guidance.</p>
+        {% if g.current_user %}
+        <p class="muted-text mt-2 mb-0">Signed in as {{ g.current_user['username'] }}. Your new scans are saved in Scan History automatically.</p>
+        {% else %}
+        <p class="muted-text mt-2 mb-0">Sign in to save each scan result and review it later from Scan History.</p>
+        {% endif %}
+    </div>
+</section>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row">
+                <h3>Threat Scan Input</h3>
+                <span class="inline-badge badge-info">Real Time Verdict</span>
+            </div>
+
+            <form id="threatScanForm" novalidate>
+                <div class="mb-3">
+                    <label for="emailText" class="form-label">Email / Message Text</label>
+                    <textarea
+                        class="form-control"
+                        id="emailText"
+                        rows="8"
+                        maxlength="8000"
+                        placeholder="Paste suspicious email, message, or chat content here..."
+                    ></textarea>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small class="text-muted">Provide message context, sender intent, and any suspicious details for better scoring.</small>
+                        <small class="text-muted"><span id="charCount">0</span>/8000</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="websiteUrl" class="form-label">Suspicious URL (Optional)</label>
+                    <input
+                        class="form-control"
+                        id="websiteUrl"
+                        type="text"
+                        placeholder="https://example.com/login"
+                    >
+                    <small class="text-muted">You can paste domain only (example.com). HTTPS will be auto-normalized.</small>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="superScanToggle">
+                    <label class="form-check-label" for="superScanToggle">
+                        Enable SuperScan (deeper URL extraction from text)
+                    </label>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-brand" id="predictBtn">
+                        <i class="fas fa-magnifying-glass me-2"></i>
+                        Run Threat Scan
+                    </button>
+                    <button type="button" class="btn btn-outline-brand" id="clearBtn">
+                        <i class="fas fa-eraser me-2"></i>
+                        Clear
+                    </button>
+                </div>
+            </form>
+
+            <div id="scanLoading" class="py-4 text-center d-none">
+                <div class="spinner-border" style="color: var(--brand);" role="status"></div>
+                <p class="text-muted mt-3 mb-0">Running combined threat analysis...</p>
+            </div>
+
+            <div id="scanResults" class="mt-4 d-none">
+                <div id="scanResultContent"></div>
+            </div>
+        </article>
+    </div>
+
+    <div class="col-lg-5">
+        <article class="soft-card reveal mb-3">
+            <div class="card-title-row">
+                <h3>Quick Fill</h3>
+                <span class="inline-badge badge-success">Helpers</span>
+            </div>
+
+            <p class="muted-text">Instantly test known scenarios and URL patterns.</p>
+            <div class="d-grid gap-2 mb-3">
+                <button type="button" class="btn btn-outline-brand btn-sm" data-example="spam">
+                    <i class="fas fa-bug me-1"></i>
+                    Phishing Example
+                </button>
+                <button type="button" class="btn btn-outline-brand btn-sm" data-example="ham">
+                    <i class="fas fa-envelope-open me-1"></i>
+                    Safe Message Example
+                </button>
+                <button type="button" class="btn btn-outline-brand btn-sm" data-example="website">
+                    <i class="fas fa-link me-1"></i>
+                    Suspicious Website Example
+                </button>
+            </div>
+
+            <h4 class="h6">What You Get</h4>
+            <ul class="info-list">
+                <li>Combined risk score (0-100).</li>
+                <li>Email model vote + heuristic checks.</li>
+                <li>URL red flag analysis with reasons.</li>
+                <li>Actionable next-step recommendations.</li>
+                <li>Bulk summary with export.</li>
+            </ul>
+        </article>
+
+        <article class="soft-card reveal">
+            <div class="card-title-row">
+                <h3>Bulk Upload</h3>
+                <span class="inline-badge badge-info">CSV/TXT</span>
+            </div>
+
+            <form id="bulkUploadForm" novalidate>
+                <div class="mb-3">
+                    <label for="bulkFile" class="form-label">Upload File</label>
+                    <input class="form-control" type="file" id="bulkFile" accept=".csv,.txt" required>
+                    <small class="text-muted">CSV can contain email_text/text/message/body/content column, or use first column.</small>
+                </div>
+                <button type="submit" class="btn btn-brand" id="bulkUploadBtn">
+                    <i class="fas fa-file-arrow-up me-2"></i>
+                    Process Bulk File
+                </button>
+            </form>
+
+            <div id="bulkLoading" class="py-3 text-center d-none">
+                <div class="spinner-border" style="color: var(--brand);" role="status"></div>
+                <p class="text-muted mt-2 mb-0">Running bulk prediction...</p>
+            </div>
+
+            <div id="bulkResults" class="mt-3 d-none">
+                <div id="bulkResultContent"></div>
+            </div>
+        </article>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const threatScanForm = document.getElementById('threatScanForm');
+const emailTextInput = document.getElementById('emailText');
+const websiteUrlInput = document.getElementById('websiteUrl');
+const superScanToggle = document.getElementById('superScanToggle');
+const predictBtn = document.getElementById('predictBtn');
+const clearBtn = document.getElementById('clearBtn');
+const scanLoadingEl = document.getElementById('scanLoading');
+const scanResultsEl = document.getElementById('scanResults');
+const scanResultContentEl = document.getElementById('scanResultContent');
+const charCountEl = document.getElementById('charCount');
+
+const bulkUploadForm = document.getElementById('bulkUploadForm');
+const bulkFileInput = document.getElementById('bulkFile');
+const bulkUploadBtn = document.getElementById('bulkUploadBtn');
+const bulkLoadingEl = document.getElementById('bulkLoading');
+const bulkResultsEl = document.getElementById('bulkResults');
+const bulkResultContentEl = document.getElementById('bulkResultContent');
+let latestScanContext = null;
+
+const quickExamples = {
+    spam: {
+        text: 'URGENT: Your payroll account will be suspended today. Verify immediately to avoid permanent lock. Login and confirm your details now.',
+        url: 'http://secure-payroll-update.top/verify?token=urgent-access',
+        superScan: true
+    },
+    ham: {
+        text: 'Hi team, attaching meeting notes from today. Please review the action items before Friday.',
+        url: '',
+        superScan: false
+    },
+    website: {
+        text: '',
+        url: 'http://xn--secure-login-9k2e.xyz/account/verify/update',
+        superScan: false
+    }
+};
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function toggleScanLoading(isLoading) {
+    scanLoadingEl.classList.toggle('d-none', !isLoading);
+    predictBtn.disabled = isLoading;
+}
+
+function toggleBulkLoading(isLoading) {
+    bulkLoadingEl.classList.toggle('d-none', !isLoading);
+    bulkUploadBtn.disabled = isLoading;
+}
+
+function showScanResults(html) {
+    scanResultContentEl.innerHTML = html;
+    scanResultsEl.classList.remove('d-none');
+}
+
+function showScanError(message) {
+    showScanResults(`
+        <div class="result-block result-spam">
+            <h5 class="mb-2"><i class="fas fa-circle-exclamation me-2"></i>Unable to Complete Scan</h5>
+            <p class="mb-0">${escapeHtml(message)}</p>
+        </div>
+    `);
+}
+
+function getRiskPillClass(level) {
+    const normalized = String(level || '').toLowerCase();
+    if (normalized === 'high') {
+        return 'pill-danger';
+    }
+    if (normalized === 'medium') {
+        return 'pill-warning';
+    }
+    return 'pill-success';
+}
+
+function getRiskBadgeClass(level) {
+    const normalized = String(level || '').toLowerCase();
+    if (normalized === 'high') {
+        return 'badge-danger';
+    }
+    if (normalized === 'medium') {
+        return 'badge-warning';
+    }
+    return 'badge-success';
+}
+
+function getRiskFillClass(score) {
+    if (score >= 70) {
+        return 'risk-fill-high';
+    }
+    if (score >= 40) {
+        return 'risk-fill-medium';
+    }
+    return 'risk-fill-low';
+}
+
+function renderModelVotes(emailAnalysis) {
+    if (!emailAnalysis || !emailAnalysis.individual_predictions) {
+        return '';
+    }
+
+    const rows = Object.entries(emailAnalysis.individual_predictions)
+        .map(([model, prediction]) => {
+            const predictionClass = prediction === 'spam' ? 'pill-danger' : 'pill-success';
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(model.toUpperCase())}</strong></td>
+                    <td><span class="pill ${predictionClass}">${escapeHtml(String(prediction).toUpperCase())}</span></td>
+                </tr>
+            `;
+        })
+        .join('');
+
+    if (!rows) {
+        return '';
+    }
+
+    return `
+        <div class="table-responsive mt-3">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Vote</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderUrlAnalysis(urlAnalysis) {
+    const urls = Array.isArray(urlAnalysis && urlAnalysis.urls) ? urlAnalysis.urls : [];
+    if (urls.length === 0) {
+        return '<p class="text-muted mb-0">No URL was scanned in this request.</p>';
+    }
+
+    const urlRows = urls.slice(0, 6).map((item) => {
+        const levelClass = getRiskPillClass(item.risk_level);
+        const urlReason = Array.isArray(item.reasons) && item.reasons.length > 0 ? item.reasons[0] : 'No reason available.';
+        return `
+            <tr>
+                <td>${escapeHtml(item.normalized_url || item.input_url || '')}</td>
+                <td><span class="pill ${levelClass}">${escapeHtml(String(item.risk_score || 0))}</span></td>
+                <td>${escapeHtml(urlReason)}</td>
+            </tr>
+        `;
+    }).join('');
+
+    return `
+        <div class="table-responsive mt-3">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Risk</th>
+                        <th>Top Signal</th>
+                    </tr>
+                </thead>
+                <tbody>${urlRows}</tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderScanResult(payload, originalText, originalUrl) {
+    const riskScore = Number(payload.risk_score || 0);
+    const riskLevel = String(payload.risk_level || 'low');
+    const verdict = String(payload.verdict || 'unknown').replace(/_/g, ' ').toUpperCase();
+    const explanations = Array.isArray(payload.explanations) ? payload.explanations : [];
+    const recommendations = Array.isArray(payload.recommendations) ? payload.recommendations : [];
+    const emailAnalysis = payload.email_analysis || null;
+
+    const isHighRisk = riskScore >= 40;
+    const riskClass = getRiskFillClass(riskScore);
+    const riskPillClass = getRiskPillClass(riskLevel);
+    const riskBadgeClass = getRiskBadgeClass(riskLevel);
+
+    const explanationList = explanations.length > 0
+        ? `<ul class="scan-list mb-3">${explanations.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+        : '<p class="text-muted mb-3">No explanation details were returned.</p>';
+
+    const recommendationList = recommendations.length > 0
+        ? `<ul class="scan-list mb-0">${recommendations.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+        : '<p class="text-muted mb-0">No recommendation was generated.</p>';
+
+    const emailPredictionHtml = emailAnalysis && emailAnalysis.prediction
+        ? `
+            <div class="mt-3">
+                <p class="mb-1 text-muted">Email Prediction</p>
+                <span class="pill ${emailAnalysis.prediction === 'spam' ? 'pill-danger' : 'pill-success'}">
+                    ${escapeHtml(String(emailAnalysis.prediction).toUpperCase())}
+                </span>
+            </div>
+        `
+        : '';
+
+    const topUrl = payload.url_analysis && payload.url_analysis.top_risky_url ? payload.url_analysis.top_risky_url : null;
+    const topUrlHtml = topUrl
+        ? `
+            <div class="result-block result-soft mt-3">
+                <p class="mb-1 text-muted">Top Risky URL</p>
+                <p class="mb-1 break-all"><strong>${escapeHtml(topUrl.normalized_url || topUrl.input_url || '')}</strong></p>
+                <span class="pill ${getRiskPillClass(topUrl.risk_level)}">${escapeHtml(String(topUrl.risk_level || '').toUpperCase())} (${escapeHtml(String(topUrl.risk_score || 0))})</span>
+            </div>
+        `
+        : '';
+
+    latestScanContext = {
+        originalText,
+        originalUrl,
+        scanPayload: payload
+    };
+
+    showScanResults(`
+        <div class="result-block ${isHighRisk ? 'result-spam' : 'result-ham'}">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0">
+                    <i class="fas ${isHighRisk ? 'fa-triangle-exclamation' : 'fa-circle-check'} me-2"></i>
+                    Verdict: ${escapeHtml(verdict)}
+                </h5>
+                <span class="inline-badge ${riskBadgeClass}">${escapeHtml(riskLevel.toUpperCase())} RISK</span>
+            </div>
+
+            <div class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted">Threat Score</span>
+                    <strong>${riskScore}/100</strong>
+                </div>
+                <div class="risk-meter">
+                    <span class="risk-fill ${riskClass}" style="width: ${Math.max(0, Math.min(100, riskScore))}%;"></span>
+                </div>
+            </div>
+
+            ${(originalText || originalUrl) ? `
+                <p class="mt-3 mb-2 text-muted">Input Preview</p>
+                <p class="mb-2">${escapeHtml((originalText || '').slice(0, 220))}${(originalText || '').length > 220 ? '...' : ''}</p>
+                ${originalUrl ? `<p class="mb-0 break-all"><strong>URL:</strong> ${escapeHtml(originalUrl)}</p>` : ''}
+            ` : ''}
+
+            ${emailPredictionHtml}
+            ${renderModelVotes(emailAnalysis)}
+            ${topUrlHtml}
+
+            <hr>
+            <h6 class="mb-2">Why this score?</h6>
+            ${explanationList}
+
+            <h6 class="mb-2">Recommended actions</h6>
+            ${recommendationList}
+
+            <h6 class="mt-3 mb-2">URL analysis</h6>
+            ${renderUrlAnalysis(payload.url_analysis)}
+
+            <button type="button" class="btn btn-outline-brand btn-sm mt-3" id="exportResultBtn">
+                <i class="fas fa-download me-1"></i>
+                Export Scan Result
+            </button>
+
+            <div class="mt-3 pt-2 border-top feedback-row">
+                <p class="text-muted mb-2">Was this verdict useful? Help improve model quality.</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-brand btn-sm" id="feedbackSafeBtn">
+                        <i class="fas fa-thumbs-up me-1"></i>
+                        Mark Safe
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="feedbackScamBtn">
+                        <i class="fas fa-thumbs-down me-1"></i>
+                        Mark Scam
+                    </button>
+                </div>
+                <p class="text-muted small mb-0 mt-2" id="feedbackStatus"></p>
+            </div>
+        </div>
+    `);
+
+    const exportBtn = document.getElementById('exportResultBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => exportSingleResult(payload, originalText, originalUrl));
+    }
+
+    const feedbackSafeBtn = document.getElementById('feedbackSafeBtn');
+    const feedbackScamBtn = document.getElementById('feedbackScamBtn');
+    if (feedbackSafeBtn) {
+        feedbackSafeBtn.addEventListener('click', () => submitFeedback('safe'));
+    }
+    if (feedbackScamBtn) {
+        feedbackScamBtn.addEventListener('click', () => submitFeedback('scam'));
+    }
+}
+
+function setFeedbackStatus(message, isError) {
+    const statusEl = document.getElementById('feedbackStatus');
+    if (!statusEl) {
+        return;
+    }
+    statusEl.textContent = message;
+    statusEl.classList.toggle('text-danger', Boolean(isError));
+    statusEl.classList.toggle('text-success', !isError && Boolean(message));
+}
+
+async function submitFeedback(feedbackLabel) {
+    if (!latestScanContext || !latestScanContext.scanPayload) {
+        setFeedbackStatus('No scan context available for feedback.', true);
+        return;
+    }
+
+    const payload = {
+        feedback_label: feedbackLabel,
+        email_text: latestScanContext.originalText || '',
+        url: latestScanContext.originalUrl || '',
+        scan_history_id: latestScanContext.scanPayload.scan_history_id,
+        original_scan: {
+            verdict: latestScanContext.scanPayload.verdict,
+            risk_level: latestScanContext.scanPayload.risk_level,
+            risk_score: latestScanContext.scanPayload.risk_score
+        },
+        source: 'web_app'
+    };
+
+    try {
+        setFeedbackStatus('Submitting feedback...', false);
+        const response = await fetch('/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok || result.error) {
+            setFeedbackStatus(result.error || 'Feedback submission failed.', true);
+            return;
+        }
+        setFeedbackStatus('Thanks, feedback recorded for retraining.', false);
+    } catch (error) {
+        setFeedbackStatus('Network error while submitting feedback.', true);
+    }
+}
+
+function exportSingleResult(scanPayload, text, sourceUrl) {
+    const exportPayload = {
+        result: scanPayload,
+        email_text: text,
+        url: sourceUrl,
+        timestamp: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
+        type: 'application/json'
+    });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `threat_scan_${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objectUrl);
+}
+
+function showBulkError(message) {
+    bulkResultContentEl.innerHTML = `
+        <div class="result-block result-spam">
+            <h6 class="mb-1"><i class="fas fa-circle-exclamation me-2"></i>Bulk Upload Failed</h6>
+            <p class="mb-0">${escapeHtml(message)}</p>
+        </div>
+    `;
+    bulkResultsEl.classList.remove('d-none');
+}
+
+function renderBulkResults(payload) {
+    const summary = payload.summary || {};
+    const results = Array.isArray(payload.results) ? payload.results : [];
+    const rowsToRender = results.slice(0, 100);
+
+    const rowsHtml = rowsToRender
+        .map((item) => {
+            if (item.error) {
+                return `
+                    <tr>
+                        <td>${item.index}</td>
+                        <td>${escapeHtml(item.email_preview || '')}</td>
+                        <td><span class="pill pill-danger">ERROR</span></td>
+                    </tr>
+                `;
+            }
+            return `
+                <tr>
+                    <td>${item.index}</td>
+                    <td>${escapeHtml(item.email_preview || '')}</td>
+                    <td><span class="pill ${item.prediction === 'spam' ? 'pill-danger' : 'pill-success'}">${escapeHtml((item.prediction || '').toUpperCase())}</span></td>
+                </tr>
+            `;
+        })
+        .join('');
+
+    const truncatedMessage = results.length > rowsToRender.length
+        ? `<p class="text-muted mt-2 mb-0">Showing first ${rowsToRender.length} of ${results.length} rows.</p>`
+        : '';
+
+    bulkResultContentEl.innerHTML = `
+        <div class="bulk-summary-grid mb-3">
+            <div class="bulk-summary-item">
+                <span>Total</span>
+                <strong>${summary.total || 0}</strong>
+            </div>
+            <div class="bulk-summary-item">
+                <span>Spam</span>
+                <strong>${summary.spam || 0}</strong>
+            </div>
+            <div class="bulk-summary-item">
+                <span>Ham</span>
+                <strong>${summary.ham || 0}</strong>
+            </div>
+            <div class="bulk-summary-item">
+                <span>Failed</span>
+                <strong>${summary.failed || 0}</strong>
+            </div>
+        </div>
+
+        <div class="table-responsive bulk-scroll-table">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Email Preview</th>
+                        <th>Prediction</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        </div>
+        ${truncatedMessage}
+
+        <button type="button" class="btn btn-outline-brand btn-sm mt-3" id="exportBulkBtn">
+            <i class="fas fa-download me-1"></i>
+            Export Bulk Result
+        </button>
+    `;
+
+    bulkResultsEl.classList.remove('d-none');
+
+    const exportBulkBtn = document.getElementById('exportBulkBtn');
+    if (exportBulkBtn) {
+        exportBulkBtn.addEventListener('click', () => exportBulkResult(payload));
+    }
+}
+
+function exportBulkResult(payload) {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `spam_bulk_result_${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+emailTextInput.addEventListener('input', () => {
+    charCountEl.textContent = emailTextInput.value.length;
+});
+
+clearBtn.addEventListener('click', () => {
+    emailTextInput.value = '';
+    websiteUrlInput.value = '';
+    superScanToggle.checked = false;
+    charCountEl.textContent = '0';
+    scanResultsEl.classList.add('d-none');
+    emailTextInput.focus();
+});
+
+document.querySelectorAll('[data-example]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const key = button.getAttribute('data-example');
+        const example = quickExamples[key] || { text: '', url: '', superScan: false };
+        emailTextInput.value = example.text;
+        websiteUrlInput.value = example.url;
+        superScanToggle.checked = Boolean(example.superScan);
+        charCountEl.textContent = emailTextInput.value.length;
+        emailTextInput.focus();
+    });
+});
+
+threatScanForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const emailText = emailTextInput.value.trim();
+    const websiteUrl = websiteUrlInput.value.trim();
+    const superScanEnabled = superScanToggle.checked;
+
+    if (!emailText && !websiteUrl) {
+        showScanError('Please provide message text or URL before running a threat scan.');
+        return;
+    }
+
+    toggleScanLoading(true);
+    scanResultsEl.classList.add('d-none');
+
+    try {
+        const response = await fetch('/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email_text: emailText,
+                url: websiteUrl,
+                super_scan: superScanEnabled
+            })
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok || payload.error) {
+            showScanError(payload.error || 'Request failed while running threat scan.');
+        } else {
+            renderScanResult(payload, emailText, websiteUrl);
+        }
+    } catch (error) {
+        showScanError('Network error occurred while contacting the scan service.');
+    } finally {
+        toggleScanLoading(false);
+    }
+});
+
+bulkUploadForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    if (!bulkFileInput.files || bulkFileInput.files.length === 0) {
+        showBulkError('Please select a CSV or TXT file first.');
+        return;
+    }
+
+    const selectedFile = bulkFileInput.files[0];
+    const lowerName = selectedFile.name.toLowerCase();
+    if (!(lowerName.endsWith('.csv') || lowerName.endsWith('.txt'))) {
+        showBulkError('Unsupported file type. Please upload a .csv or .txt file.');
+        return;
+    }
+
+    toggleBulkLoading(true);
+    bulkResultsEl.classList.add('d-none');
+
+    try {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        const response = await fetch('/predict/bulk-upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok || payload.error) {
+            showBulkError(payload.error || 'Bulk upload request failed.');
+        } else {
+            renderBulkResults(payload);
+        }
+    } catch (error) {
+        showBulkError('Network error occurred while processing the bulk file.');
+    } finally {
+        toggleBulkLoading(false);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Model Performance - Email Spam Detection System{% endblock %}
+
+{% block content %}
+<section class="hero-panel reveal mb-4">
+    <div>
+        <p class="eyebrow">Model Evaluation</p>
+        <h2 class="page-title">Classifier Performance Benchmarks</h2>
+        <p class="page-subtitle">Compare how each model performs across core NLP metrics and identify the best production-ready decision profile.</p>
+    </div>
+    <div class="hero-chip">
+        <span>Total Models</span>
+        <strong>{{ metrics|length if metrics else 0 }}</strong>
+    </div>
+</section>
+
+{% if error %}
+<article class="soft-card reveal">
+    <div class="result-block result-spam">
+        <h5 class="mb-2"><i class="fas fa-circle-exclamation me-2"></i>Metrics Not Available</h5>
+        <p class="mb-0">{{ error }}</p>
+    </div>
+</article>
+{% else %}
+{% set primary_model_name = 'lr' if metrics and 'lr' in metrics else (metrics.keys()|list|first if metrics else None) %}
+{% set primary_metrics = metrics.get(primary_model_name) if primary_model_name else None %}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <article class="metric-card reveal h-100">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Primary Model Accuracy</p>
+                    <p class="metric-value">{{ primary_metrics.accuracy if primary_metrics else 'N/A' }}</p>
+                </div>
+                <span class="metric-icon metric-accuracy"><i class="fas fa-bullseye"></i></span>
+            </div>
+        </article>
+    </div>
+    <div class="col-md-4">
+        <article class="metric-card reveal h-100">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Primary Model F1</p>
+                    <p class="metric-value">{{ primary_metrics.f1_score if primary_metrics else 'N/A' }}</p>
+                </div>
+                <span class="metric-icon metric-ham"><i class="fas fa-layer-group"></i></span>
+            </div>
+        </article>
+    </div>
+    <div class="col-md-4">
+        <article class="metric-card reveal h-100">
+            <div class="metric-row">
+                <div>
+                    <p class="metric-label">Models Tracked</p>
+                    <p class="metric-value">{{ metrics|length }}</p>
+                </div>
+                <span class="metric-icon metric-total"><i class="fas fa-network-wired"></i></span>
+            </div>
+        </article>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <article class="soft-card reveal">
+            <div class="card-title-row">
+                <h3>Detailed Metrics</h3>
+                <span class="inline-badge badge-info">Updated</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Accuracy</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1-Score</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for model_name, metric in metrics.items() %}
+                        <tr>
+                            <td>
+                                <strong>{{ model_name.upper() }}</strong>
+                                {% if model_name == primary_model_name %}
+                                <span class="pill pill-success ms-2">Recommended</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ metric.accuracy }}</td>
+                            <td>{{ metric.precision }}</td>
+                            <td>{{ metric.recall }}</td>
+                            <td><strong>{{ metric.f1_score }}</strong></td>
+                            <td class="text-muted">
+                                {% if characteristics and model_name in characteristics %}
+                                {{ characteristics[model_name].description }}
+                                {% else %}
+                                ML Classification Model
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <article class="soft-card chart-card reveal h-100">
+            <div class="card-title-row">
+                <h3>Accuracy Comparison</h3>
+            </div>
+            <canvas id="accuracyChart"></canvas>
+        </article>
+    </div>
+
+    <div class="col-lg-6">
+        <article class="soft-card chart-card reveal h-100">
+            <div class="card-title-row">
+                <h3>Precision vs Recall</h3>
+            </div>
+            <canvas id="precisionRecallChart"></canvas>
+        </article>
+    </div>
+</div>
+
+{% if characteristics %}
+<div class="row g-3">
+    {% for model_name, char in characteristics.items() %}
+    <div class="col-md-6 col-xl-3">
+        <article class="soft-card reveal h-100">
+            <div class="card-title-row mb-2">
+                <h4>{{ model_name.upper() }}</h4>
+                <span class="inline-badge badge-info">{{ char.speed }}</span>
+            </div>
+            <p class="muted-text mb-0">{{ char.description }}</p>
+        </article>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+{% if not error|default(false) %}
+const metricsData = {{ metrics|tojson|safe }};
+const modelNames = Object.keys(metricsData).map((name) => name.toUpperCase());
+
+const accuracyPalette = ['#0f766e', '#14b8a6', '#f97316', '#0369a1'];
+const linePalette = ['#0f766e', '#ea580c'];
+
+new Chart(document.getElementById('accuracyChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+        labels: modelNames,
+        datasets: [{
+            label: 'Accuracy',
+            data: Object.values(metricsData).map((item) => Number(item.accuracy)),
+            backgroundColor: accuracyPalette,
+            borderRadius: 10,
+            maxBarThickness: 48
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 1,
+                grid: { color: 'rgba(15, 23, 42, 0.08)' }
+            },
+            x: {
+                grid: { display: false }
+            }
+        }
+    }
+});
+
+new Chart(document.getElementById('precisionRecallChart').getContext('2d'), {
+    type: 'line',
+    data: {
+        labels: modelNames,
+        datasets: [
+            {
+                label: 'Precision',
+                data: Object.values(metricsData).map((item) => Number(item.precision)),
+                borderColor: linePalette[0],
+                backgroundColor: 'rgba(15, 118, 110, 0.15)',
+                tension: 0.35,
+                fill: true
+            },
+            {
+                label: 'Recall',
+                data: Object.values(metricsData).map((item) => Number(item.recall)),
+                borderColor: linePalette[1],
+                backgroundColor: 'rgba(234, 88, 12, 0.12)',
+                tension: 0.35,
+                fill: true
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 1,
+                grid: { color: 'rgba(15, 23, 42, 0.08)' }
+            },
+            x: {
+                grid: { display: false }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}
